@@ -1,0 +1,92 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: Add Kubernetes GPG key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        keyring: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+    - name: Add Kubernetes apt repository
+      apt_repository:
+        repo: deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+    - name: Install Kubernetes packages
+      apt:
+        name: "{{ package }}"
+      vars:
+        package:
+          - kubelet
+          - kubeadm
+          - kubectl
+      notify: Hold Kubernetes packages
+    - name: Turn off swap
+      command: swapoff -a
+      when: ansible_memory_mb['swap']['total'] > 0
+      notify: Disable swap
+    - name: kubeadm init
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      args:
+        creates: /etc/kubernetes/admin.conf
+    - name: Create ~/.kube directory
+      file:
+        state: directory
+        path: /home/{{ default_user }}/.kube
+        mode: 0755
+    - name: Initialise ~/.kube/config
+      copy:
+        dest: /home/{{ default_user }}/.kube/config
+        src: /etc/kubernetes/admin.conf
+        owner: "{{ default_user }}"
+        group: "{{ default_user }}"
+        remote_src: yes
+        force: no
+        mode: '0600'
+    - name: Download Helm installer
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+        dest: /usr/local/bin/get-helm-3
+        mode: '0755'
+    - name: Install Helm
+      command: /usr/local/bin/get-helm-3
+      args:
+        creates: /usr/local/bin/helm
+  handlers:
+    - name: Hold Kubernetes packages
+      command: apt-mark hold kubelet kubeadm kubectl
+    - name: Disable swap
+      lineinfile:
+        regexp: / swap /
+        path: /etc/fstab
+        state: absent
+
+- hosts: all
+  tasks:
+    - name: Check node master
+      command: kubectl get nodes --selector=node-role.kubernetes.io/master
+      register: kube_node_master
+    - name: Untaint node
+      command: kubectl taint nodes --all node-role.kubernetes.io/master-
+      when: kube_node_master.stdout.find('master') == -1
+    - name: Check Flannel
+      command: kubectl -nkube-system get daemonset
+      register: kube_flannel
+    - name: Install Flannel
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      when: kube_flannel.stdout.find('flannel') == -1
+    - name: Get Helm repositories
+      command: helm repo list
+      register: helm_repos
+      ignore_errors: true
+    - name: Add OpenEBS chart repository
+      command: helm repo add openebs https://openebs.github.io/charts
+      when: helm_repos.stdout.find('bitnami') == -1
+    - name: Get Kubernetes namespaces
+      command: kubectl get namespaces
+      register: kube_ns
+    - name: Create openebs namespace
+      command: kubectl create namespace openebs
+      when: kube_ns.stdout.find('openebs') == -1
+    - name: Get openebs daemonset
+      command: kubectl -nopenebs get daemonset
+      register: openebs_daemonset
+    - name: Install OpenEBS via helm
+      command: helm --namespace=openebs install openebs openebs/openebs
+      when: openebs_daemonset.stdout.find('openebs') == -1

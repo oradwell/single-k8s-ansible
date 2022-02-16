@@ -1,0 +1,58 @@
+- hosts: all
+  become: true
+  tasks:
+    # Install Docker
+    - name: Ensure unofficial docker is not installed
+      apt:
+        name: "{{ package }}"
+        state: absent
+      vars:
+        package:
+          - docker
+          - docker-engine
+          - docker.io
+          - containerd
+          - runc
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        keyring: /usr/share/keyrings/docker-archive-keyring.gpg
+    - name: Add Docker apt repository
+      apt_repository:
+        repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu focal stable
+    - name: Install official docker and containerd
+      apt:
+        name: "{{ package }}"
+        update_cache: yes
+      vars:
+        package:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+    # Configure Docker
+    - name: Ensure docker config directory is present
+      file:
+        state: directory
+        path: /etc/docker
+        mode: 0755
+    - name: Configure docker
+      copy:
+        dest: /etc/docker/daemon.json
+        src: files/docker-daemon.json
+        mode: 0644
+      notify: Restart docker
+    - name: Enable docker
+      systemd:
+        name: docker
+        enabled: yes
+    - name: Add docker group
+      user:
+        name: "{{ default_user }}"
+        groups:
+          - docker
+
+  handlers:
+    - name: Restart docker
+      service:
+        name: docker
+        state: restarted

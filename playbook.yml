@@ -1,0 +1,20 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Install libraries for downloading packages
+      apt:
+        name: "{{ package }}"
+      vars:
+        package:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+- import_playbook: playbooks/docker.yml
+  vars:
+    default_user: vagrant
+- import_playbook: playbooks/kube.yml
+  vars:
+    default_user: vagrant
