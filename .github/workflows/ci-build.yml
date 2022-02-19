@@ -1,0 +1,24 @@
+name: Build
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Vagrant
+        run: |
+          curl -sSLo vagrant_linux_amd64.zip \
+            https://releases.hashicorp.com/vagrant/2.2.19/vagrant_2.2.19_linux_amd64.zip
+          unzip vagrant_linux_amd64.zip -d /usr/local/bin
+      - name: Validate Vagrantfile
+        run: vagrant validate --ignore-provider
+      - name: Validate Ansible playbooks
+        run: ansible-playbook -i localhost, --syntax-check playbook.yml playbooks/*.yml

@@ -14,7 +14,7 @@
           - lsb-release
 - import_playbook: playbooks/docker.yml
   vars:
-    default_user: vagrant
+    default_user: "{{ ansible_user }}"
 - import_playbook: playbooks/kube.yml
   vars:
-    default_user: vagrant
+    default_user: "{{ ansible_user }}"
