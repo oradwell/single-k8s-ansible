@@ -15,6 +15,6 @@
 - import_playbook: playbooks/docker.yml
   vars:
     default_user: "{{ ansible_user }}"
-- import_playbook: playbooks/kube.yml
+- import_playbook: playbooks/kubernetes.yml
   vars:
     default_user: "{{ ansible_user }}"
