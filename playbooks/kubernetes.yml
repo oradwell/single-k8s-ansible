@@ -60,11 +60,11 @@
 - hosts: all
   tasks:
     - name: Check node master
-      command: kubectl get nodes --selector=node-role.kubernetes.io/master
+      command: kubectl get nodes --selector=node-role.kubernetes.io/master -ojsonpath --template='{.items[].spec.taints}'
       register: kube_node_master
     - name: Untaint node
       command: kubectl taint nodes --all node-role.kubernetes.io/master-
-      when: kube_node_master.stdout.find('master') == -1
+      when: kube_node_master.stdout.find('NoSchedule') != -1
     - name: Check Flannel
       command: kubectl -nkube-system get daemonset
       register: kube_flannel
