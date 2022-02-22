@@ -1,6 +1,6 @@
 # single-k8s-ansible
 
-Create a single-node [Kubernetes](https://kubernetes.io/) cluster using [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+Create a single-node [Kubernetes](https://kubernetes.io/) cluster using [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) on Ubuntu 20.04
 
 ## Provision using Vagrant
 
@@ -32,3 +32,8 @@ ansible-playbook \
 ```
 
 [![asciicast](https://asciinema.org/a/470229.svg)](https://asciinema.org/a/470229)
+
+## Links
+
+- [Article on Medium](https://medium.com/@oliver.radwell/provision-a-single-node-kubernetes-cluster-using-ansible-on-ubuntu-20-04-5fc5a32db408)
+- [Video on YouTube](https://www.youtube.com/watch?v=BO7ZznIvcQI)
