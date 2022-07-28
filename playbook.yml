@@ -2,6 +2,18 @@
 - hosts: all
   become: true
   tasks:
+    - name: Check apt cache
+      shell:
+        cmd: |
+          mom=$(stat -c %Z /var/lib/apt/periodic/update-success-stamp)
+          bom=$(date +%s)
+          echo $((bom - mom))
+      register: apt_cache_age
+    - name: Update apt cache
+      apt:
+        update_cache: true
+      # Only if cache is more than a week old
+      when: apt_cache_age.stdout | int > 604800
     - name: Install libraries for downloading packages
       apt:
         name: "{{ package }}"

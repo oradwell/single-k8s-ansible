@@ -21,8 +21,11 @@
       command: swapoff -a
       when: ansible_memory_mb['swap']['total'] > 0
       notify: Disable swap
+    - name: Install cri-docker
+      apt:
+        deb: https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.3/cri-dockerd_0.2.3.3-0.ubuntu-focal_amd64.deb
     - name: kubeadm init
-      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16 --cri-socket /var/run/cri-dockerd.sock
       args:
         creates: /etc/kubernetes/admin.conf
     - name: Create ~/.kube directory
